@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html >
+	<head>
+		<meta charset="UTF-8">
+		<title>the unseen</title>
+		<link rel="stylesheet" href="css/style.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js" integrity="sha512-yNJzAsg5JyP91u+sLHlUDULMBd3hmEiVkYeeN1cQBKaLZ7EyT6oH2u5THNIRM2Fu6VKcZJv+F/QAp1h/qzy9Ow==" crossorigin="anonymous"></script>
+	</head>
+        <script id="vertexShader" type="x-shader/x-fragment">
+	  varying vec2 texCoordVarying;
+
+	  void main() {
+	      texCoordVarying = uv;
+	      gl_Position =   projectionMatrix *
+		  modelViewMatrix *
+		  vec4(position,1.0);
+	  }
+	</script>
+      <script id="fragmentShader" type="x-shader/x-fragment">
+        uniform float time;
+        varying vec2 texCoordVarying;
+
+        void main()	{
+            vec2 st = texCoordVarying;
+
+            vec3 color = vec3(0.);
+            color = vec3(st.x,st.y,sin(time));
+
+            gl_FragColor = vec4(color,1);
+        }
+      </script>
+	<body>
+          <canvas id="canvas"></canvas>
+
+	  <script src="js/sceneSubjects/Shader.js"></script>
+
+	  <script src="js/SceneManager.js"></script>
+	  <script src="js/main.js"></script>
+	</body>
+</html>
