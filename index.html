@@ -23,7 +23,134 @@
         uniform bool decode;
         uniform vec2 resolution;
         varying vec2 texCoordVarying;
+        uniform sampler2D tex0;
+        uniform float time;
 
+
+        vec3 cosPalette(float t){
+    vec3 a = vec3(0.6,0.5,0.25);
+    vec3 b = vec3(0.5,0.5,0.4);
+    vec3 c = vec3(.2,.3,1.);
+    vec3 d = vec3(.2,0.3,0.32);
+  return a + b*cos( 6.28318*(c*t+d));
+}
+
+
+float sdBox( vec3 p, vec3 b, float r )
+{  vec3 q = abs(p) - b;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) -r;
+}
+
+const int MAX_STEPS = 12;
+const int Iterations = 9;
+const float Phi = 1.618;
+float Scale =4.3;
+const float Bailout =5.2;
+vec4 orbitTrap = vec4(100.0);
+float smallNumber = 0.001;
+float maxDistance = 10.;
+
+vec3 n1 = normalize(vec3(-1.,Phi-1.0,1.0/(Phi)));
+vec3 n2 = normalize(vec3(Phi-1.0,1.0/(Phi-1.0),-1.0));
+vec3 n3 = normalize(vec3(1.0/(Phi-1.0),-1.0,Phi-1.0));
+
+mat3  rotationMatrix3(vec3 v, float angle)
+{
+	float c = cos(radians(angle));
+	float s = sin(radians(angle));
+
+	return mat3(c + (1.0 - c) * v.x * v.x, (1.0 - c) * v.x * v.y - s * v.z, (1.0 - c) * v.x * v.z + s * v.y,
+		(1.0 - c) * v.x * v.y + s * v.z, c + (1.0 - c) * v.y * v.y, (1.0 - c) * v.y * v.z - s * v.x,
+		(1.0 - c) * v.x * v.z - s * v.y, (1.0 - c) * v.y * v.z + s * v.x, c + (1.0 - c) * v.z * v.z
+		);
+}
+
+float DE(vec3 z)
+        {
+vec3 Rot1 = vec3(1.);
+float Angle1 = 3.14+time;
+vec3 Rot2 = vec3(1.,0.,-1.);
+float Angle2 =  1. ;
+
+    mat3 fracRotation2 = rotationMatrix3(normalize(Rot2), Angle2);
+    mat3 fracRotation1 = rotationMatrix3(normalize(Rot1), Angle1);
+
+	float r;
+	float bailout2 = pow(2., Bailout);
+
+    vec3 offset = vec3(2.5);
+
+	float t; int m = 0;
+	for( int n = 0; n < Iterations; n++) {
+		z *= fracRotation1;
+	   for (int j= 0; j<4; j++){
+		z-= 2. * min(0.0, dot(z, n1)) * n1;
+		z-=	2.0 * min(0.0, dot(z, n2)) * n2;
+		z-=	2.0 * min(0.0, dot(z, n3)) * n3;
+	   }
+
+		z = z*Scale - offset*(Scale-1.0);
+		z *= fracRotation2;
+		r = dot(z, z);
+		z -= 0.4;
+		if (r > bailout2) break;
+		m = n;
+	}
+
+	return (sdBox(z,vec3(2.,1.,1.),1.)*0.08) * pow(Scale,  float(-m-1));
+}
+
+float scene(vec3 pos){
+   float dF = pos.y;
+
+    return DE(pos);
+}
+
+vec3 estimateNormal(vec3 p) {
+    vec2 e = vec2 (0.002, 0.);
+
+    vec3 n = scene(p)- vec3(
+        scene(p-e.xyy),
+        scene(p-e.yxy),
+        scene(p-e.yyx));
+
+    return normalize(n);
+}
+
+
+vec4 lighting(vec3 pos, vec3 viewDir){
+   vec3 lightPos = vec3(0.3*cos(time*.1),-.5,0.2);
+
+    vec3 normal = estimateNormal(pos);
+    vec3 reflectDir = reflect(-lightPos, normal);
+
+    float specularStrength =1.;
+    vec3 specColor = normal.z*normal+pos.z;
+    float spec = pow( max(dot(viewDir, reflectDir), -0.4), 2.2);
+    vec3 specular = specularStrength * spec * specColor;
+    return vec4(specular,1.);
+}
+
+
+
+        float trace(vec3 origin, vec3 dir){
+        int max_it = 80;
+        float maxD=3.;
+        float eps = 0.01;
+            float d0 = 0.;
+            for(int i =0; i < max_it; i++){
+                vec3 pos = origin + dir *d0;
+                float d = scene(pos);
+                d0 +=d;
+                if (d0 > maxD) return 0.;
+                if (d < eps) break;
+            }
+            return d0;
+
+        }
+
+
+        ////////////////////
 
         struct RGB{
             uint r;
@@ -51,12 +178,29 @@
         void main()
         {
             vec2 uv = texCoordVarying; vec3 col;
-            vec3 color = vec3(0.);
+            vec4 color;
 
             vec3 img1; vec3 img2;
 
-            img1.xy += fract(uv*5.);
-            img2 += cos(10.*length(uv));
+            img1 = texture2D(tex0, uv).xyz;
+
+            ///fractal
+             vec2 pos = uv;
+            float cs = cos( time*0.0175 ), si = sin( time*0.1375 );
+            vec3 origin = vec3(1.2,2.,1.5);
+            float fish = (1.-dot(pos, pos)*.5)*.5;
+            vec3 dir = normalize(vec3(pos,fish));
+            dir.xz = mat2(cs, si,-si, cs)*dir.xz;
+            dir.xy = mat2(cs, si,-si, cs)*dir.xy;
+
+            float tr = trace(origin,dir);
+            if (tr>0.){
+
+                vec3 surfP = origin + tr * dir;
+                color = lighting(surfP,dir);
+            }
+
+            img2 = color.rgb;
 
 
             RGB dstPixel;RGB srcPixel;
