@@ -23,7 +23,7 @@ function SceneManager(canvas) {
 
 
     function buildRender({ width, height }) {
-        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true,  preserveDrawingBuffer: true  });
         const DPR = (window.devicePixelRatio) ? window.devicePixelRatio : 1;
         renderer.setPixelRatio(DPR);
         renderer.setSize(width, height);
@@ -56,8 +56,6 @@ function SceneManager(canvas) {
           folder.add(toggleEncode,'encode');
         folder.add(toggleDecode,'decode');
 
-
-
     }
 
     this.update = function() {
@@ -78,4 +76,23 @@ function SceneManager(canvas) {
 
         renderer.setSize(width, height);
     }
+
+    /*** ADDING SCREEN SHOT ABILITY ***/
+    window.addEventListener("keyup", function(e){
+    var imgData;
+    //Listen to 'P' key
+    if(e.which !== 80) return;
+    try {
+        imgData = renderer.domElement.toDataURL();
+        let link = document.createElement("a");
+        link.href = imgData;
+	link.download = "img";
+	link.click();
+    }
+    catch(e) {
+        console.log("Browser does not support taking screenshot of 3d context",e);
+        return;
+    }
+});
+
 }
