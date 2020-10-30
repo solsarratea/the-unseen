@@ -1,6 +1,6 @@
 function Shader(scene) {
     var geometry = new THREE.PlaneBufferGeometry( 2,2);
-    var texture  = new THREE.TextureLoader().load("textures/q2.jpg");
+    var texture  = new THREE.TextureLoader().load("textures/q0.jpg");
 
     var material = new THREE.ShaderMaterial( {
         uniforms: {
