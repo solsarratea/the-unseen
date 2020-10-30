@@ -11,6 +11,8 @@ function SceneManager(canvas) {
     const renderer = buildRender(screenDimensions);
     const camera = buildCamera(screenDimensions);
     const sceneSubjects = createSceneSubjects(scene);
+    const sceneControls = {decode: false};
+    const guiControls = addGuiControls();
 
     function buildScene() {
         const scene = new THREE.Scene();
@@ -25,9 +27,6 @@ function SceneManager(canvas) {
         const DPR = (window.devicePixelRatio) ? window.devicePixelRatio : 1;
         renderer.setPixelRatio(DPR);
         renderer.setSize(width, height);
-
-        renderer.gammaInput = true;
-        renderer.gammaOutput = true;
 
         return renderer;
     }
@@ -45,11 +44,26 @@ function SceneManager(canvas) {
         return sceneSubjects;
     }
 
+
+    function addGuiControls(){
+     const datGui  = new dat.GUI({ autoPlace: true });
+       var toggleDecode = { decode:function(){
+           sceneControls.decode = true; }};
+       var toggleEncode = { encode:function(){
+           sceneControls.decode = false; }};
+
+     let folder = datGui.addFolder(`the unseen`)
+          folder.add(toggleEncode,'encode');
+        folder.add(toggleDecode,'decode');
+
+
+
+    }
+
     this.update = function() {
         const elapsedTime = clock.getElapsedTime();
-
         for(let i=0; i<sceneSubjects.length; i++)
-        	sceneSubjects[i].update(elapsedTime);
+            sceneSubjects[i].update(elapsedTime,sceneControls);
 
         renderer.render(scene, camera);
     }
@@ -61,7 +75,6 @@ function SceneManager(canvas) {
         screenDimensions.height = height;
 
         camera.aspect = width / height;
-        //camera.updateProjectionMatrix();
 
         renderer.setSize(width, height);
     }
