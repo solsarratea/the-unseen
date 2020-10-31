@@ -11,7 +11,7 @@ function SceneManager(canvas) {
     const renderer = buildRender(screenDimensions);
     const camera = buildCamera(screenDimensions);
     const sceneSubjects = createSceneSubjects(scene);
-    const sceneControls = {decode: false};
+    const sceneControls = {decode: false, start:false};
     const guiControls = addGuiControls();
 
     function buildScene() {
@@ -49,17 +49,24 @@ function SceneManager(canvas) {
      const datGui  = new dat.GUI({ autoPlace: true });
        var toggleDecode = { decode:function(){
            sceneControls.decode = true; }};
-       var toggleEncode = { encode:function(){
+       var toggleEncode = { hide:function(){
            sceneControls.decode = false; }};
+        var toggleFlow = { flow:function(){
+           sceneControls.start = !sceneControls.start;}};
+
 
      let folder = datGui.addFolder(`the unseen`)
-          folder.add(toggleEncode,'encode');
-        folder.add(toggleDecode,'decode');
+          folder.add(toggleEncode,'hide');
+          folder.add(toggleDecode,'decode');
+          folder.add(toggleFlow,'flow');
 
     }
 
     this.update = function() {
-        const elapsedTime = clock.getElapsedTime();
+        var elapsedTime = 0;
+        if (sceneControls.start){
+            elapsedTime = clock.getElapsedTime();
+        }
         for(let i=0; i<sceneSubjects.length; i++)
             sceneSubjects[i].update(elapsedTime,sceneControls);
 
